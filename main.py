@@ -49,7 +49,7 @@ def send_schedule_command(message):
         chat_state.last_message_id = bot.send_photo(message.chat.id, day_schedule(), disable_notification=True).id
     except:
         chat_state.last_message_id = bot.send_message(message.chat.id, "На удивление пустой день", disable_notification=True).id
-    time.sleep(10)
+    time.sleep(25)
     try:
         bot.delete_message(message.chat.id, chat_state.last_message_id)
         bot.delete_message(message.chat.id, chat_state.last_message_id - 1)
@@ -69,15 +69,6 @@ def handle_text(message):
         else:
             bot.send_sticker(message.chat.id, "CAACAgIAAxkBAAEHyPdj76H0IMu5B8JC0J3fydn_EXnFeAAC5xYAAkm1YEjpExkRZP9e7i4E", disable_notification=True)
 
-
-# @bot.message_handler(content_types=['text'])
-# def chatting(message):
-#     index = message.text.find(str_to_remove)
-#     if index != -1:
-#         try:
-#             bot.delete_message(message.chat.id, message.message_id)
-#         except:
-#             pass
 
 
 scheduler.add_job(func=change_chat_title, trigger='cron', day_of_week='mon', hour=12,  timezone='Asia/Yekaterinburg')
