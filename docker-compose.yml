@@ -1,8 +1,0 @@
-version: "2"
-services:
-  bot:
-    build: .
-    env_file:
-      - ./.env
-    restart: always
-    image: deelord/tgbot:latest
