@@ -18,8 +18,6 @@ class ChatState:
         self.askers = askers
         self.messages_to_del = []
 
-    def msg_to_del(self):
-        print(datetime.datetime.now().time(), self.messages_to_del)
 
     def get_askers(self):
         print(self.askers)
@@ -74,7 +72,7 @@ def add_user_to_askers(user_id):
 @bot.message_handler(commands=["id"])
 def handle_id(message):
     add_user_to_askers(message.from_user.id)
-    id_to_del = bot.send_message(message.chat.id, message.chat.id).id
+    id_to_del = bot.send_message(message.chat.id, message.chat.id, disable_notification=True).id
     sleep(5)
     bot.delete_message(message.chat.id, id_to_del)
 
