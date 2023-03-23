@@ -25,7 +25,6 @@ class ChatState:
         print(self.askers)
 
 
-
 # Загрузка переменных среды
 load_dotenv(find_dotenv())
 token = os.environ.get("TOKEN")
@@ -43,8 +42,15 @@ with open("users.json", "r") as f:
 
 # Функция для изменения названия чата
 def change_chat_title():
-    title = "(НН) БЕЗ БАБ ББ-40919" if week_oddity() else "(ЧН) БЕЗ БАБ ББ-40919"
+    chat_title = bot.get_chat(chat_id).title
+    if chat_title.startswith("(НН)") or chat_title.startswith("(ЧН)"):
+        new_title = chat_title[5:]
+        title = f"(НН) {new_title}" if week_oddity() else f"(ЧН) {new_title}"
+    else:
+        title = f"(НН) {chat_title}" if week_oddity() else f"(ЧН) {chat_title}"
     bot.set_chat_title(chat_id, title)
+
+
 
 
 def can_user_use_command(user_id):
@@ -68,7 +74,10 @@ def add_user_to_askers(user_id):
 @bot.message_handler(commands=["id"])
 def handle_id(message):
     add_user_to_askers(message.from_user.id)
-    bot.send_message(message.chat.id, message.chat.id)
+    id_to_del = bot.send_message(message.chat.id, message.chat.id).id
+    sleep(5)
+    bot.delete_message(message.chat.id, id_to_del)
+
 
 # Ручной вызов функции смены названия чата
 @bot.message_handler(commands=["title"])
@@ -112,12 +121,11 @@ def handle_text(message):
     else:
         bot.send_message(message.chat.id, "Чётная неделя",
                          disable_notification=True)
-        bot.send_sticker(message.chat.id, "CAACAgIAAxkBAAEHyPdj76H0IMu5B8JC0J3fydn_EXnFeAAC5xYAAkm1YEjpExkRZP9e7i4E",
-                         disable_notification=True)
+
 
 
 scheduler.add_job(func=change_chat_title, trigger='cron',
-                  day_of_week='tue', hour=14, minute=10, timezone="Asia/Yekaterinburg")
+                  day_of_week='mon', hour=8,  timezone="UTC")
 
 scheduler.add_job(func=chat_state.get_askers, trigger='interval', seconds=10)
 
