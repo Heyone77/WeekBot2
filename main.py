@@ -17,6 +17,7 @@ class ChatState:
         if askers is None:
             askers = {}
         self.askers = askers
+        self.command_counter = {}
         self.messages_to_del = []
 
     def get_askers(self):
@@ -33,8 +34,15 @@ bot = telebot.TeleBot(token)
 scheduler = BackgroundScheduler()
 chat_state = ChatState()
 
-with open("users.json", "r") as f:
-    chat_state.askers = {int(k): v for k, v in json.load(f).items()}
+if os.path.exists("users.json") and os.path.getsize("users.json") > 0:
+    with open("users.json", "r") as f:
+        chat_state.askers = {int(k): v for k, v in json.load(f).items()}
+else:
+    chat_state.askers = {}
+
+# with open("users.json", "r") as f:
+#     chat_state.askers = {int(k): v for k, v in json.load(f).items()}
+
 
 
 # Функция для изменения названия чата
@@ -46,6 +54,14 @@ def change_chat_title():
     else:
         title = f"(НН) {chat_title}" if week_oddity() else f"(ЧН) {chat_title}"
     bot.set_chat_title(chat_id, title)
+
+
+def update_command_counter(user_id, command, instance):
+    if user_id not in instance.command_counter:
+        instance.command_counter[user_id] = {}
+    if command not in instance.command_counter[user_id]:
+        instance.command_counter[user_id][command] = 0
+    instance.command_counter[user_id][command] += 1
 
 
 def can_user_use_command(user_id):
@@ -74,22 +90,10 @@ def handle_id(message):
     bot.delete_message(message.chat.id, id_to_del)
 
 
-# Отправка ID чата
-@bot.message_handler(content_types=["text"])
-def handle_id(message):
-    regex = r"оп(о|а)зд.+"
-    matches = re.findall(regex, message.text.lower(), re.MULTILINE)
-    if len(matches) > 0:
-        id_to_del = bot.send_message(message.chat.id, "Отлично, держи в курсе =)", disable_notification=True).id
-        sleep(5)
-        bot.delete_message(message.chat.id, id_to_del)
-    else:
-        return
-
-
 # Ручной вызов функции смены названия чата
 @bot.message_handler(commands=["title"])
 def change_title_command(message):
+    update_command_counter(message.from_user.id, "title", chat_state)
     change_chat_title()
 
 
@@ -100,6 +104,8 @@ def save_data():
     with open("users.json", "w") as f:
         # записываем словарь в файл в формате JSON
         json.dump(chat_state.askers, f)
+    with open('command_count.json', 'w') as f:
+        json.dump(chat_state.command_counter, f)
 
 
 @bot.message_handler(commands=['schedule'])
@@ -123,12 +129,30 @@ def mycommand_handler(message):
 
 @bot.message_handler(commands=["week"])
 def handle_text(message):
+    update_command_counter(message.from_user.id, "week", chat_state)
     if week_oddity():
         bot.send_message(message.chat.id, "Нечётная неделя",
                          disable_notification=True)
     else:
         bot.send_message(message.chat.id, "Чётная неделя",
                          disable_notification=True)
+
+
+@bot.message_handler(commands=["test"])
+def handle_text(message):
+    update_command_counter(message.from_user.id, "test", chat_state)
+
+
+@bot.message_handler(content_types=["text"])
+def handle_id(message):
+    regex = r"оп(о|а)зд.+"
+    matches = re.findall(regex, message.text.lower(), re.MULTILINE)
+    if len(matches) > 0:
+        id_to_del = bot.reply_to(message, "Отлично, держи в курсе =)", disable_notification=True).id
+        sleep(5)
+        bot.delete_message(message.chat.id, id_to_del)
+    else:
+        return
 
 
 scheduler.add_job(func=change_chat_title, trigger='cron',
