@@ -1,6 +1,6 @@
 APScheduler==3.10.1
 certifi==2022.12.7
-charset-normalizer==3.0.1
+charset-normalizer==3.1.0
 docopt==0.6.2
 idna==3.4
 pipreqs==0.4.11

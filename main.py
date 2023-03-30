@@ -74,19 +74,6 @@ def handle_id(message):
     bot.delete_message(message.chat.id, id_to_del)
 
 
-# Отправка ID чата
-@bot.message_handler(content_types=["text"])
-def handle_id(message):
-    regex = r"оп(о|а)зд.+"
-    matches = re.findall(regex, message.text.lower(), re.MULTILINE)
-    if len(matches) > 0:
-        id_to_del = bot.send_message(message.chat.id, "Отлично, держи в курсе =)", disable_notification=True).id
-        sleep(5)
-        bot.delete_message(message.chat.id, id_to_del)
-    else:
-        return
-
-
 # Ручной вызов функции смены названия чата
 @bot.message_handler(commands=["title"])
 def change_title_command(message):
@@ -129,6 +116,20 @@ def handle_text(message):
     else:
         bot.send_message(message.chat.id, "Чётная неделя",
                          disable_notification=True)
+
+
+
+# Отправка ID чата
+@bot.message_handler(content_types=["text"])
+def handle_id(message):
+    regex = r"оп(о|а)зд.+"
+    matches = re.findall(regex, message.text.lower(), re.MULTILINE)
+    if len(matches) > 0:
+        id_to_del = bot.send_message(message.chat.id, "Отлично, держи в курсе =)", disable_notification=True).id
+        sleep(5)
+        bot.delete_message(message.chat.id, id_to_del)
+    else:
+        return
 
 
 scheduler.add_job(func=change_chat_title, trigger='cron',
