@@ -76,7 +76,9 @@ def handle_id(message):
 # Отправка ID чата
 @bot.message_handler(content_types=["text"])
 def handle_id(message):
-    if "опоздаю" in message.text.lower():
+    regex = r"оп(о|а)зд.+"
+    matches = re.findall(regex, message.text_lower(), re.MULTILINE)
+    if len(matches) > 0:
         id_to_del = bot.send_message(message.chat.id, "Отлично, держи в курсе =)", disable_notification=True).id
         sleep(5)
         bot.delete_message(message.chat.id, id_to_del)
