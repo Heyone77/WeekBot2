@@ -18,7 +18,6 @@ class ChatState:
         self.askers = askers
         self.messages_to_del = []
 
-
     def get_askers(self):
         print(self.askers)
 
@@ -37,7 +36,6 @@ with open("users.json", "r") as f:
     chat_state.askers = {int(k): v for k, v in json.load(f).items()}
 
 
-
 # Функция для изменения названия чата
 def change_chat_title():
     chat_title = bot.get_chat(chat_id).title
@@ -49,8 +47,6 @@ def change_chat_title():
     bot.set_chat_title(chat_id, title)
 
 
-
-
 def can_user_use_command(user_id):
     now = datetime.datetime.now()
     if user_id in last_command_time:
@@ -60,12 +56,12 @@ def can_user_use_command(user_id):
     last_command_time[user_id] = now
     return True
 
+
 def add_user_to_askers(user_id):
     if user_id in chat_state.askers:
         chat_state.askers[user_id] += 1
     else:
         chat_state.askers[user_id] = 0
-
 
 
 # Отправка ID чата
@@ -75,6 +71,17 @@ def handle_id(message):
     id_to_del = bot.send_message(message.chat.id, message.chat.id, disable_notification=True).id
     sleep(5)
     bot.delete_message(message.chat.id, id_to_del)
+
+
+# Отправка ID чата
+@bot.message_handler(content_types=["text"])
+def handle_id(message):
+    if "опоздаю" in message.text.lower():
+        id_to_del = bot.send_message(message.chat.id, "Отлично, держи в курсе =)", disable_notification=True).id
+        sleep(5)
+        bot.delete_message(message.chat.id, id_to_del)
+    else:
+        return
 
 
 # Ручной вызов функции смены названия чата
@@ -121,9 +128,8 @@ def handle_text(message):
                          disable_notification=True)
 
 
-
 scheduler.add_job(func=change_chat_title, trigger='cron',
-                  day_of_week='mon', hour=8,  timezone="UTC")
+                  day_of_week='mon', hour=8, timezone="UTC")
 
 scheduler.add_job(func=chat_state.get_askers, trigger='interval', seconds=10)
 
