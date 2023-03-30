@@ -58,3 +58,4 @@ __pycache__
 ./pyvenv.cfg
 ./docker-compose.yml
 ./users.json
+!/users.json
