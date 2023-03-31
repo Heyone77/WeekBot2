@@ -133,6 +133,7 @@ def motivate_students():
     quote = get_motivational_quote()
     translated = translator.translate(quote['quote'])
 
+
     # bot.send_message(chat_id, quote['quote'])
 
 
