@@ -57,6 +57,5 @@ __pycache__
 /Lib/
 ./pyvenv.cfg
 ./docker-compose.yml
-./users.json
-!/users.json
 command_count.json
+users.json
