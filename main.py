@@ -2,7 +2,7 @@
 import re
 from time import sleep
 import telebot
-from Schedule import day_schedule
+from Schedule import day_schedule, get_motivational_quote
 from Week_oddity import week_oddity
 import os
 from dotenv import load_dotenv, find_dotenv
@@ -10,6 +10,7 @@ from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 import atexit
 import json
+from translate import Translator
 
 
 class ChatState:
@@ -33,6 +34,7 @@ chat_id = os.environ.get("CHAT_ID")
 bot = telebot.TeleBot(token)
 scheduler = BackgroundScheduler()
 chat_state = ChatState()
+translator = Translator(to_lang='ru')
 
 if os.path.exists("users.json") and os.path.getsize("users.json") > 0:
     with open("users.json", "r") as f:
@@ -40,9 +42,9 @@ if os.path.exists("users.json") and os.path.getsize("users.json") > 0:
 else:
     chat_state.askers = {}
 
+
 # with open("users.json", "r") as f:
 #     chat_state.askers = {int(k): v for k, v in json.load(f).items()}
-
 
 
 # Функция для изменения названия чата
@@ -127,6 +129,16 @@ def mycommand_handler(message):
         return
 
 
+def motivate_students():
+    quote = get_motivational_quote()
+    translated = translator.translate(quote['quote'])
+
+
+    # bot.send_message(chat_id, quote['quote'])
+
+
+
+
 @bot.message_handler(commands=["week"])
 def handle_text(message):
     update_command_counter(message.from_user.id, "week", chat_state)
@@ -159,6 +171,8 @@ scheduler.add_job(func=change_chat_title, trigger='cron',
                   day_of_week='mon', hour=8, timezone="UTC")
 
 scheduler.add_job(func=chat_state.get_askers, trigger='interval', seconds=10)
+
+# scheduler.add_job(func=motivate_students, trigger='interval', seconds=2)
 
 scheduler.start()
 atexit.register(save_data)
