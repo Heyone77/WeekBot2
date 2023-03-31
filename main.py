@@ -2,15 +2,15 @@
 import re
 from time import sleep
 import telebot
-from Schedule import day_schedule, get_motivational_quote
 from Week_oddity import week_oddity
 import os
+from Schedule import day_schedule
 from dotenv import load_dotenv, find_dotenv
 from apscheduler.schedulers.background import BackgroundScheduler
 import datetime
 import atexit
 import json
-from translate import Translator
+import pickle
 
 
 class ChatState:
@@ -21,20 +21,23 @@ class ChatState:
         self.command_counter = {}
         self.messages_to_del = []
 
-    def get_askers(self):
-        print(self.askers)
+    def get_info(self):
+        print(f"{self.command_counter}")
 
 
 # Загрузка переменных среды
 load_dotenv(find_dotenv())
 token = os.environ.get("TOKEN")
 chat_id = os.environ.get("CHAT_ID")
+admin_id = os.environ.get("ADMIN_ID")
+
 
 # Инициализация объектов бота и планировщика задач
 bot = telebot.TeleBot(token)
 scheduler = BackgroundScheduler()
 chat_state = ChatState()
-translator = Translator(to_lang='ru')
+
+
 
 if os.path.exists("users.json") and os.path.getsize("users.json") > 0:
     with open("users.json", "r") as f:
@@ -42,9 +45,14 @@ if os.path.exists("users.json") and os.path.getsize("users.json") > 0:
 else:
     chat_state.askers = {}
 
+if os.path.exists("command_count.pickle") and os.stat("command_count.pickle").st_size > 0:
+    with open("command_count.pickle", "rb") as f:
+        chat_state.command_counter = pickle.load(f)
+else:
+    chat_state.command_counter = {}
 
-# with open("users.json", "r") as f:
-#     chat_state.askers = {int(k): v for k, v in json.load(f).items()}
+with open("users.json", "r") as f:
+    chat_state.askers = {int(k): v for k, v in json.load(f).items()}
 
 
 # Функция для изменения названия чата
@@ -58,12 +66,19 @@ def change_chat_title():
     bot.set_chat_title(chat_id, title)
 
 
-def update_command_counter(user_id, command, instance):
+# def update_command_counter(user_id, command, instance):
+#     if user_id not in instance.command_counter:
+#         instance.command_counter[user_id] = {}
+#     if command not in instance.command_counter[user_id]:
+#         instance.command_counter[user_id][command] = 0
+#     instance.command_counter[user_id][command] += 1
+
+def update_command_counter(user_id, username, command, instance):
     if user_id not in instance.command_counter:
-        instance.command_counter[user_id] = {}
-    if command not in instance.command_counter[user_id]:
-        instance.command_counter[user_id][command] = 0
-    instance.command_counter[user_id][command] += 1
+        instance.command_counter[user_id] = {'username': username, 'commands': {}}
+    if command not in instance.command_counter[user_id]['commands']:
+        instance.command_counter[user_id]['commands'][command] = 0
+    instance.command_counter[user_id]['commands'][command] += 1
 
 
 def can_user_use_command(user_id):
@@ -92,22 +107,23 @@ def handle_id(message):
     bot.delete_message(message.chat.id, id_to_del)
 
 
-# Ручной вызов функции смены названия чата
-@bot.message_handler(commands=["title"])
-def change_title_command(message):
-    update_command_counter(message.from_user.id, "title", chat_state)
-    change_chat_title()
-
-
 last_command_time = {}
 
 
 def save_data():
-    with open("users.json", "w") as f:
+    with open("users.json", "w") as file:
         # записываем словарь в файл в формате JSON
-        json.dump(chat_state.askers, f)
-    with open('command_count.json', 'w') as f:
-        json.dump(chat_state.command_counter, f)
+        json.dump(chat_state.askers, file)
+    with open('command_count.pickle', 'wb') as file:
+        pickle.dump(chat_state.command_counter, file)
+
+
+@bot.message_handler(commands=['list'])
+def mycommand_handler(message):
+    dict_to_mess = json.dumps(chat_state.command_counter)
+    bot.send_message(message.from_user.id,
+                     f"{dict_to_mess}, <a href='tg://user?id={message.from_user.id}'>{chat_state.command_counter[message.from_user.id]['username']}</a>",
+                     parse_mode="HTML")
 
 
 @bot.message_handler(commands=['schedule'])
@@ -117,7 +133,9 @@ def mycommand_handler(message):
         try:
             message_id = bot.send_photo(
                 message.chat.id, day_schedule(), disable_notification=True).id
-        except:
+            update_command_counter(message.from_user.id, message.from_user.first_name, "schedule", chat_state)
+        except Exception as e:
+            bot.send_message(admin_id, f"Ошибка: {e}")
             return
         chat_state.messages_to_del.append(message_id)
         sleep(25)
@@ -129,19 +147,9 @@ def mycommand_handler(message):
         return
 
 
-def motivate_students():
-    quote = get_motivational_quote()
-    translated = translator.translate(quote['quote'])
-
-
-    # bot.send_message(chat_id, quote['quote'])
-
-
-
-
 @bot.message_handler(commands=["week"])
 def handle_text(message):
-    update_command_counter(message.from_user.id, "week", chat_state)
+    update_command_counter(message.from_user.id, message.from_user.first_name, "week", chat_state)
     if week_oddity():
         bot.send_message(message.chat.id, "Нечётная неделя",
                          disable_notification=True)
@@ -152,7 +160,8 @@ def handle_text(message):
 
 @bot.message_handler(commands=["test"])
 def handle_text(message):
-    update_command_counter(message.from_user.id, "test", chat_state)
+    update_command_counter(message.from_user.id, message.from_user.first_name, "test", chat_state)
+    bot.send_message(message.chat.id, "test")
 
 
 @bot.message_handler(content_types=["text"])
@@ -160,6 +169,7 @@ def handle_id(message):
     regex = r"оп(о|а)зд.+"
     matches = re.findall(regex, message.text.lower(), re.MULTILINE)
     if len(matches) > 0:
+        update_command_counter(message.from_user.id, message.from_user.first_name, "опоздашка", chat_state)
         id_to_del = bot.reply_to(message, "Отлично, держи в курсе =)", disable_notification=True).id
         sleep(5)
         bot.delete_message(message.chat.id, id_to_del)
@@ -168,11 +178,9 @@ def handle_id(message):
 
 
 scheduler.add_job(func=change_chat_title, trigger='cron',
-                  day_of_week='mon', hour=8, timezone="UTC")
+                  day_of_week='mon', hour=7)
 
-scheduler.add_job(func=chat_state.get_askers, trigger='interval', seconds=10)
-
-# scheduler.add_job(func=motivate_students, trigger='interval', seconds=2)
+# scheduler.add_job(func=chat_state.get_info, trigger='interval', seconds=10)
 
 scheduler.start()
 atexit.register(save_data)
