@@ -122,7 +122,7 @@ def handle_text(message):
 # Отправка ID чата
 @bot.message_handler(content_types=["text"])
 def handle_id(message):
-    regex = r"оп(о|а)зд.+"
+    regex = r".+(п(о|а)зд)|(держ)|(успе).+"
     matches = re.findall(regex, message.text.lower(), re.MULTILINE)
     if len(matches) > 0:
         id_to_del = bot.send_message(message.chat.id, "Отлично, держи в курсе =)", disable_notification=True).id
