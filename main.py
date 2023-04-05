@@ -33,8 +33,11 @@ bot = telebot.TeleBot(token)
 scheduler = BackgroundScheduler()
 chat_state = ChatState()
 
-with open("users.json", "r") as f:
-    chat_state.askers = {int(k): v for k, v in json.load(f).items()}
+try:
+    with open("users.json", "r") as f:
+        chat_state.askers = {int(k): v for k, v in json.load(f).items()}
+except:
+    chat_state.askers = {}
 
 
 # Функция для изменения названия чата
@@ -116,7 +119,6 @@ def handle_text(message):
     else:
         bot.send_message(message.chat.id, "Чётная неделя",
                          disable_notification=True)
-
 
 
 # Отправка ID чата
