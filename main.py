@@ -153,7 +153,7 @@ def handle_text(message):
 
 @bot.message_handler(content_types=["text"])
 def handle_id(message):
-    regex = r"(о|а)п(о|а)зд.+"
+    regex = r".+(п(о|а)зд)|(держ)|(успе).+"
     matches = re.findall(regex, message.text.lower(), re.MULTILINE)
     if len(matches) > 0:
         update_command_counter(message.from_user.id, message.from_user.first_name, "opozdal", chat_state)
