@@ -1,5 +1,8 @@
 import re
 from time import sleep
+
+import telebot
+
 from Week_oddity import week_oddity
 from Schedule import day_schedule
 from chat_state import ChatState
@@ -10,9 +13,19 @@ chat_state = ChatState()
 chat_state.load_chat_state()
 
 
+# Обработчик команды /start
+@bot.message_handler(commands=['start'])
+def send_welcome(message):
+    inline_keyboard = telebot.types.InlineKeyboardMarkup()
+    button1 = telebot.types.InlineKeyboardButton('Нажми меня', callback_data='button1_pressed')
+    button2 = telebot.types.InlineKeyboardButton('Нажми меня', callback_data='button2_pressed')
+    inline_keyboard.add(button1, button2)
+    bot.send_message(message.chat.id, 'Привет! Нажми одину и кнопок:', reply_markup=inline_keyboard)
+
+
 @bot.message_handler(commands=["id"])
 def command_handler(message):
-    update_command_counter(message.from_user.id, message.from_user.first_name, "week", chat_state)
+    update_command_counter(message.from_user, "week", chat_state)
     id_to_del = bot.send_message(message.chat.id, message.chat.id, disable_notification=True).id
     sleep(5)
     bot.delete_message(message.chat.id, id_to_del)
@@ -51,7 +64,7 @@ def command_handler(message):
         chat_state.messages_to_del.append(message.message_id)
         try:
             message_id = bot.send_photo(message.chat.id, day_schedule(), disable_notification=True).id
-            update_command_counter(message.from_user.id, message.from_user.first_name, "schedule", chat_state)
+            update_command_counter(message.from_user, "schedule", chat_state)
         except Exception as e:
             bot.send_message(admin_id, f"Error: {e}")
             return
@@ -67,7 +80,7 @@ def command_handler(message):
 
 @bot.message_handler(commands=["week"])
 def command_handler(message):
-    update_command_counter(message.from_user.id, message.from_user.first_name, "week", chat_state)
+    update_command_counter(message.from_user, "week", chat_state)
     if week_oddity():
         bot.send_message(message.chat.id, "Нечётная неделя",
                          disable_notification=True)
@@ -81,9 +94,19 @@ def command_handler(message):
     regex = r".+(п(о|а)зд)|(держ)|(успе).+"
     matches = re.findall(regex, message.text.lower(), re.MULTILINE)
     if len(matches) > 0:
-        update_command_counter(message.from_user.id, message.from_user.first_name, "opozdal", chat_state)
+        update_command_counter(message.from_user, "opozdal", chat_state)
         id_to_del = bot.reply_to(message, "Отлично, держи в курсе 👌👌👌", disable_notification=True).id
         sleep(5)
         bot.delete_message(message.chat.id, id_to_del)
     else:
         return
+
+
+@bot.callback_query_handler(func=lambda call: True)
+def button_callback(call):
+    if call.data == 'button1_pressed':
+        # Обработка нажатия на кнопку
+        bot.send_message(call.message.chat.id, 'Кнопка 1 нажата!')
+    elif call.data == 'button2_pressed':
+        # Обработка нажатия на кнопку 2
+        bot.send_message(call.message.chat.id, 'Кнопка 2 нажата!')

@@ -1,6 +1,8 @@
 # Функция для изменения названия чата
 from datetime import datetime, timedelta
 
+from telebot.util import user_link
+
 from Week_oddity import week_oddity
 from tgbot import chat_id, bot
 
@@ -15,13 +17,12 @@ def change_chat_title():
     bot.set_chat_title(chat_id, title)
 
 
-def update_command_counter(user_id, username, command, instance):
-    if user_id not in instance.command_counter:
-        user_link = f"<a href='tg://user?id={user_id}'>{username}</a>"
-        instance.command_counter[user_id] = {'Username:': user_link, 'Commands:': {}}
-    if command not in instance.command_counter[user_id]['Commands:']:
-        instance.command_counter[user_id]['Commands:'][command] = 0
-    instance.command_counter[user_id]['Commands:'][command] += 1
+def update_command_counter(user, command, instance):
+    if user.id not in instance.command_counter:
+        instance.command_counter[user.id] = {'Username:': user_link(user), 'Commands:': {}}
+    if command not in instance.command_counter[user.id]['Commands:']:
+        instance.command_counter[user.id]['Commands:'][command] = 0
+    instance.command_counter[user.id]['Commands:'][command] += 1
 
 
 def can_user_use_command(user_id, instance):
