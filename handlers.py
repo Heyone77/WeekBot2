@@ -2,6 +2,7 @@ import re
 from time import sleep
 
 import telebot
+from telebot.types import Message
 
 from Week_oddity import week_oddity
 from Schedule import day_schedule
@@ -95,9 +96,10 @@ def command_handler(message):
     matches = re.findall(regex, message.text.lower(), re.MULTILINE)
     if len(matches) > 0:
         update_command_counter(message.from_user, "opozdal", chat_state)
-        id_to_del = bot.reply_to(message, "Отлично, держи в курсе 👌👌👌", disable_notification=True).id
+        message_to_del = bot.send_animation(message.chat.id, "CgACAgIAAxkBAAIHR2RjoaRwUAwZ8Vd_vxGomPsYcDgoAAKYLwAEIUt7SB7T6skzDy8E", disable_notification=True, reply_to_message_id=message.id, caption="Вот твой транспорт, запрыгивай.")
+        print(message_to_del.id)
         sleep(5)
-        bot.delete_message(message.chat.id, id_to_del)
+        bot.delete_message(message.chat.id, message_to_del.id)
     else:
         return
 
